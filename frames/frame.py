@@ -1,5 +1,4 @@
 import numpy as np
-from matplotlib import pyplot as plt
 
 
 class Frame:
@@ -30,7 +29,7 @@ class Frame:
         Analysis operator.
         Vector must have shape (n, 1), where n is the dimension of the vector space.
 
-        Returns a vector with shape (m,1), where m is the number of frame vectors.
+        Returns a vector with shape (m, 1), where m is the number of frame vectors.
         """
         return self._frame_vectors.T @ vector
 
@@ -39,7 +38,7 @@ class Frame:
         Synthesis operator.
         Vector must have shape (m, 1), where m is the number of frame vectors.
 
-        Returns a vector with shape (n,1), where n is the dimension of the vector space.
+        Returns a vector with shape (n, 1), where n is the dimension of the vector space.
         """
         return self._frame_vectors @ vector
 
@@ -58,37 +57,3 @@ class RandomFrame(Frame):
             for col in range(num_frame_vecs):
                 frame[:, col] = frame[:, col] / np.sqrt(np.sum(frame[:, col] ** 2))
         super().__init__(frame_vectors=frame)
-
-
-def random_unit_vector(dimension: int):
-    """
-    Generate a random unit vector.
-    """
-    vec = np.random.randn(dimension, 1)
-    vec = vec / np.sqrt(np.sum(vec**2))
-    return vec
-
-
-def standard_frame_algorithm(frame: Frame, vector: np.ndarray, num_iters: int):
-    y = [np.zeros_like(vector) for _ in range(num_iters + 1)]
-    errors = [0 for _ in range(num_iters)]
-    Sv = frame.synthesis(frame.analysis(vector))
-    alpha = 2 / (frame.A + frame.B)
-    for k in range(num_iters):
-        Syk = frame.synthesis(frame.analysis(y[k]))
-        y[k + 1] = y[k] + alpha * (Sv - Syk)
-        errors[k] = np.sqrt(np.sum((vector - y[k + 1]) ** 2))
-    return y, errors
-
-
-if __name__ == "__main__":
-    dim = 16
-    iters = 20
-    frame = RandomFrame(dimension=dim, num_frame_vecs=37, is_unit=True)
-    vector = random_unit_vector(dimension=dim)
-    recover, error = standard_frame_algorithm(frame, vector, iters)
-
-    plt.semilogy(np.arange(1, iters + 1), error, "-ob")
-    plt.xlabel("Iteration")
-    plt.ylabel("||x-y_k||")
-    plt.show()
