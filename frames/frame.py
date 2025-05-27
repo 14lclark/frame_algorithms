@@ -1,3 +1,4 @@
+from typing import Callable
 import numpy as np
 
 
@@ -29,18 +30,30 @@ class Frame:
         (self.A, self.B) = eigenvalues[0], eigenvalues[-1]
         return eigenvalues[0], eigenvalues[-1]
 
-    def analysis(self, vector: np.ndarray, activation_function=None):
+    def analysis(self, vector):
+        """
+        Analysis operator.
+        Vector must have shape (n, 1), where n is the dimension of the vector space.
+
+        Returns a vector with shape (m, 1), where m is the number of frame vectors.
+        """
+        return self._frame_vectors.T @ vector
+
+    def analysis_with_activation(
+        self, vector: np.ndarray, activation_function: Callable = None
+    ):
         """
         Analysis operator.
         Vector must have shape (n, 1), where n is the dimension of the vector space.
         activation_function is an optional function which manipulates the measurements
         from the analysis operator.
 
-        Returns a vector with shape (m, 1), where m is the number of frame vectors.
+        Returns a vector with shape (m, 1), where m is the number of frame vectors, and
+        a dict of different types of indices affected by the activation function.
         """
         measurements = self._frame_vectors.T @ vector
         if not activation_function:
-            return measurements
+            return measurements, None
         return activation_function(measurements)
 
     def synthesis(self, vector: np.ndarray):
