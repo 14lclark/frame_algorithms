@@ -1,3 +1,5 @@
+from typing import Callable
+
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -17,10 +19,16 @@ def error(vec1, vec2):
     return np.sqrt(np.sum((vec1 - vec2) ** 2))
 
 
-def standard_frame_algorithm(frame: Frame, vector: np.ndarray, num_iters: int):
+def standard_frame_algorithm(
+    frame: Frame,
+    vector: np.ndarray,
+    num_iters: int,
+    activation_fn: Callable = lambda x: (x, None),
+):
     y = [np.zeros_like(vector) for _ in range(num_iters + 1)]
     errors = [0 for _ in range(num_iters)]
-    Sv = frame.synthesis(frame.analysis(vector))
+    measurements, indices = activation_fn(frame.analysis(vector))
+    Sv = frame.synthesis(measurements)
     alpha = 2 / (frame.A + frame.B)
     for k in range(num_iters):
         Sy_k = frame.synthesis(frame.analysis(y[k]))
@@ -29,7 +37,12 @@ def standard_frame_algorithm(frame: Frame, vector: np.ndarray, num_iters: int):
     return y, errors
 
 
-def conjugate_gradient_algorithm(frame: Frame, vector: np.ndarray, num_iters: int):
+def conjugate_gradient_algorithm(
+    frame: Frame,
+    vector: np.ndarray,
+    num_iters: int,
+    activation_fn: Callable = lambda x: (x, None),
+):
     # y is actually just an upside down lambda
     y = [0 for _ in range(num_iters + 2)]
     g = [np.zeros_like(vector) for _ in range(num_iters + 2)]
@@ -38,12 +51,10 @@ def conjugate_gradient_algorithm(frame: Frame, vector: np.ndarray, num_iters: in
     Sp = [np.zeros_like(vector) for _ in range(num_iters + 2)]
     p_dot_Sp = [0 for _ in range(num_iters + 2)]
     errors = [0 for _ in range(num_iters + 2)]
-    r[1] = p[1] = frame.frame_operator @ vector
+    measurements = activation_fn(frame.analysis(vector))
+    r[1] = p[1] = frame.synthesis(measurements)
     for k in range(1, num_iters + 1):
         Sp[k] = frame.frame_operator @ p[k]
-        # print(p[k])
-        # print(Sp[k])
-        # input()
         p_dot_Sp[k] = (p[k] * Sp[k]).sum()
         y[k] = (r[k] * p[k]).sum() / p_dot_Sp[k]
         g[k + 1] = g[k] + y[k] * p[k]
@@ -60,13 +71,15 @@ def conjugate_gradient_algorithm(frame: Frame, vector: np.ndarray, num_iters: in
             )
         )
         errors[k + 1] = error(vector, g[k + 1])
-    # print(g[2:])
-    # print(vector)
-    # print(errors[2:])
     return g[2:], errors[2:]
 
 
-def chebyshev_algorithm(frame: Frame, vector: np.ndarray, num_iters: int):
+def chebyshev_algorithm(
+    frame: Frame,
+    vector: np.ndarray,
+    num_iters: int,
+    activation_fn: Callable = lambda x: (x, None),
+):
     pass
 
 
